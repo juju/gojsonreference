@@ -45,18 +45,6 @@ func TestFull(t *testing.T) {
 	if r1.HasFragmentOnly != false {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
 	}
-
-	if r1.HasFullUrl != true {
-		t.Errorf("NewJsonReference(%v)::HasFullUrl %v expect %v", in, r1.HasFullUrl, true)
-	}
-
-	if r1.HasUrlPathOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasUrlPathOnly %v expect %v", in, r1.HasUrlPathOnly, false)
-	}
-
-	if r1.HasFileScheme != false {
-		t.Errorf("NewJsonReference(%v)::HasFileScheme %v expect %v", in, r1.HasFileScheme, false)
-	}
 }
 
 func TestFullUrl(t *testing.T) {
@@ -74,18 +62,6 @@ func TestFullUrl(t *testing.T) {
 
 	if r1.HasFragmentOnly != false {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
-	}
-
-	if r1.HasFullUrl != true {
-		t.Errorf("NewJsonReference(%v)::HasFullUrl %v expect %v", in, r1.HasFullUrl, true)
-	}
-
-	if r1.HasUrlPathOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasUrlPathOnly %v expect %v", in, r1.HasUrlPathOnly, false)
-	}
-
-	if r1.HasFileScheme != false {
-		t.Errorf("NewJsonReference(%v)::HasFileScheme %v expect %v", in, r1.HasFileScheme, false)
 	}
 }
 
@@ -105,18 +81,6 @@ func TestFragmentOnly(t *testing.T) {
 	if r1.HasFragmentOnly != true {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, true)
 	}
-
-	if r1.HasFullUrl != false {
-		t.Errorf("NewJsonReference(%v)::HasFullUrl %v expect %v", in, r1.HasFullUrl, false)
-	}
-
-	if r1.HasUrlPathOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasUrlPathOnly %v expect %v", in, r1.HasUrlPathOnly, false)
-	}
-
-	if r1.HasFileScheme != false {
-		t.Errorf("NewJsonReference(%v)::HasFileScheme %v expect %v", in, r1.HasFileScheme, false)
-	}
 }
 
 func TestUrlPathOnly(t *testing.T) {
@@ -134,18 +98,6 @@ func TestUrlPathOnly(t *testing.T) {
 
 	if r1.HasFragmentOnly != false {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
-	}
-
-	if r1.HasFullUrl != false {
-		t.Errorf("NewJsonReference(%v)::HasFullUrl %v expect %v", in, r1.HasFullUrl, false)
-	}
-
-	if r1.HasUrlPathOnly != true {
-		t.Errorf("NewJsonReference(%v)::HasUrlPathOnly %v expect %v", in, r1.HasUrlPathOnly, true)
-	}
-
-	if r1.HasFileScheme != false {
-		t.Errorf("NewJsonReference(%v)::HasFileScheme %v expect %v", in, r1.HasFileScheme, false)
 	}
 }
 
@@ -240,8 +192,8 @@ func TestInheritsInvalid(t *testing.T) {
 			t.Errorf("Inherits(%s, %s) should result in error %s, got %s instead",
 				r1.String(), r2.String(), test.expectedErr, err.Error())
 			t.Logf("schemes %v, %v",
-				r1.GetPointer().String(),
-				r2.GetPointer().String())
+				r1.referenceUrl.Scheme,
+				r2.referenceUrl.Scheme)
 		}
 	}
 }
@@ -264,18 +216,6 @@ func TestFileScheme(t *testing.T) {
 
 	if r1.HasFragmentOnly != false {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in1, r1.HasFragmentOnly, false)
-	}
-
-	if r1.HasFileScheme != true {
-		t.Errorf("NewJsonReference(%v)::HasFileScheme %v expect %v", in1, r1.HasFileScheme, true)
-	}
-
-	if r1.HasFullFilePath != true {
-		t.Errorf("NewJsonReference(%v)::HasFullFilePath %v expect %v", in1, r1.HasFullFilePath, true)
-	}
-
-	if r1.IsCanonical() != true {
-		t.Errorf("NewJsonReference(%v)::IsCanonical %v expect %v", in1, r1.IsCanonical, true)
 	}
 
 	result, err := r1.Inherits(r2)

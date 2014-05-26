@@ -30,7 +30,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/sigu-399/gojsonpointer"
+	"github.com/binary132/gojsonpointer"
 )
 
 const (
@@ -38,7 +38,6 @@ const (
 )
 
 func NewJsonReference(jsonReferenceString string) (JsonReference, error) {
-
 	var r JsonReference
 	err := r.parse(jsonReferenceString)
 	return r, err
@@ -49,11 +48,7 @@ type JsonReference struct {
 	referenceUrl     *url.URL
 	referencePointer gojsonpointer.JsonPointer
 
-	HasFullUrl      bool
-	HasUrlPathOnly  bool
 	HasFragmentOnly bool
-	HasFileScheme   bool
-	HasFullFilePath bool
 }
 
 func (r *JsonReference) GetUrl() *url.URL {
@@ -66,19 +61,15 @@ func (r *JsonReference) GetPointer() *gojsonpointer.JsonPointer {
 
 func (r *JsonReference) String() string {
 
-	if r.referenceUrl != nil {
-		return r.referenceUrl.String()
-	}
-
 	if r.HasFragmentOnly {
 		return const_fragment_char + r.referencePointer.String()
 	}
 
-	return r.referencePointer.String()
-}
+	if r.referenceUrl != nil {
+		return r.referenceUrl.String()
+	}
 
-func (r *JsonReference) IsCanonical() bool {
-	return (r.HasFileScheme && r.HasFullFilePath) || (!r.HasFileScheme && r.HasFullUrl)
+	return r.referencePointer.String()
 }
 
 // "Constructor", parses the given string JSON reference
@@ -94,20 +85,10 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 		}
 		r.HasFragmentOnly = true
 	} else {
-
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
 		if err != nil {
 			return err
 		}
-
-		if r.referenceUrl.Scheme != "" && r.referenceUrl.Host != "" {
-			r.HasFullUrl = true
-		} else {
-			r.HasUrlPathOnly = true
-		}
-
-		r.HasFileScheme = r.referenceUrl.Scheme == "file"
-		r.HasFullFilePath = strings.HasPrefix(r.GetUrl().Path, "/")
 
 		r.referencePointer, err = gojsonpointer.NewJsonPointer(r.referenceUrl.Fragment)
 		if err != nil {
@@ -122,22 +103,27 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 // If the child cannot inherit from the parent, an error is returned
 func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 
-	if !r.HasFileScheme && !child.HasFileScheme {
-		return r.inheritsImplHttp(child)
+	if !child.HasFragmentOnly {
+		if child.GetUrl().Scheme != r.GetUrl().Scheme {
+			return nil, errors.New("Scheme of child " + child.String() +
+				"incompatible with scheme of parent " + r.String())
+		}
 	}
 
-	if r.HasFileScheme && (child.HasFileScheme || child.HasFragmentOnly) {
+	switch r.GetUrl().Scheme {
+	case "http":
+		return r.inheritsImplHttp(child)
+	case "file":
 		return r.inheritsImplFile(child)
 	}
 
-	return nil, errors.New("References are not compatible")
-
+	return nil, errors.New("Scheme type " + r.GetUrl().Scheme + " not handled.")
 }
 
 func (r *JsonReference) inheritsImplFile(child JsonReference) (*JsonReference, error) {
 
-	if !r.HasFullFilePath {
-		return nil, errors.New("Parent reference must be canonical")
+	if !r.GetUrl().IsAbs() {
+		return nil, errors.New("Parent reference must be absolute URL.")
 	}
 
 	childReference := child.String()
@@ -156,11 +142,11 @@ func (r *JsonReference) inheritsImplFile(child JsonReference) (*JsonReference, e
 
 func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, error) {
 
-	if !r.HasFullUrl {
-		return nil, errors.New("Parent reference must be canonical")
+	if !r.referenceUrl.IsAbs() {
+		return nil, errors.New("Parent reference must be absolute URL.")
 	}
 
-	if r.HasFullUrl && child.HasFullUrl {
+	if r.referenceUrl.IsAbs() && (child.referenceUrl != nil && child.referenceUrl.IsAbs()) {
 		if r.referenceUrl.Scheme != child.referenceUrl.Scheme {
 			return nil, errors.New("References have different schemes")
 		}
@@ -168,6 +154,7 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 			return nil, errors.New("References have different hosts")
 		}
 	}
+	println("Got farther child = " + child.String())
 
 	inheritedReference, err := NewJsonReference(r.String())
 	if err != nil {
@@ -178,10 +165,9 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 		inheritedReference.referenceUrl.Fragment = child.referencePointer.String()
 		inheritedReference.referencePointer = child.referencePointer
 	}
-	if child.HasUrlPathOnly {
+	if !child.referenceUrl.IsAbs() {
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
-	}
-	if child.HasFullUrl {
+	} else {
 		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
 	}
