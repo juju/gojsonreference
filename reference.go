@@ -69,6 +69,7 @@ func (r *JsonReference) String() string {
 		return r.referenceUrl.String()
 	}
 
+	println("Never get here!")
 	return r.referencePointer.String()
 }
 
@@ -83,6 +84,12 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 		if err != nil {
 			return err
 		}
+
+		r.referenceUrl, err = url.Parse(jsonReferenceString)
+		if err != nil {
+			return err
+		}
+
 		r.HasFragmentOnly = true
 	} else {
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
@@ -146,7 +153,8 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 		return nil, errors.New("Parent reference must be absolute URL.")
 	}
 
-	if r.referenceUrl.IsAbs() && (child.referenceUrl != nil && child.referenceUrl.IsAbs()) {
+	if r.referenceUrl.IsAbs() && child.referenceUrl.IsAbs() {
+		println("Got inside child = " + child.String())
 		if r.referenceUrl.Scheme != child.referenceUrl.Scheme {
 			return nil, errors.New("References have different schemes")
 		}
@@ -154,7 +162,6 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 			return nil, errors.New("References have different hosts")
 		}
 	}
-	println("Got farther child = " + child.String())
 
 	inheritedReference, err := NewJsonReference(r.String())
 	if err != nil {
