@@ -196,10 +196,10 @@ func TestInheritsFragmentValid(t *testing.T) {
 
 func TestInheritsInvalid(t *testing.T) {
 
-	var tests = []struct { 
-		path1 string,
-		path2 string,
-		expectedErr string,
+	var tests = []struct {
+		path1       string
+		path2       string
+		expectedErr string
 	}{{
 		"http://www.test.com/doc.json",
 		"http://www.test2.com/doc.json#/bla",
