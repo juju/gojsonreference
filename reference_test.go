@@ -200,34 +200,49 @@ func TestInheritsInvalid(t *testing.T) {
 		path1       string
 		path2       string
 		expectedErr string
+		description string
 	}{{
 		"http://www.test.com/doc.json",
 		"http://www.test2.com/doc.json#/bla",
 		"References have different hosts",
+		"Check that different hosts are caught.",
 	}, {
 		"file:///foo/bar.doc",
 		"http://www.foo.com/bar.doc",
+		"References are not compatible",
+		"Check that incompatible references are caught.",
+	}, {
+		"http://www.foo.com",
+		"mailto:scheme@foo.com",
 		"References have different schemes",
+		"Check that different schemes are caught.",
 	}}
 
-	r1, err := NewJsonReference(in1)
-	if err != nil {
-		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
-	}
+	for i, test := range tests {
+		t.Logf("test %v: %s", i, test.description)
+		r1, err := NewJsonReference(test.path1)
+		if err != nil {
+			t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
+		}
 
-	r2, err := NewJsonReference(in2)
-	if err != nil {
-		t.Errorf("NewJsonReference(%s) error %s", r2.String(), err.Error())
-	}
+		r2, err := NewJsonReference(test.path2)
+		if err != nil {
+			t.Errorf("NewJsonReference(%s) error %s", r2.String(), err.Error())
+		}
 
-	_, err = r1.Inherits(r2)
+		_, err = r1.Inherits(r2)
 
-	if err == nil {
-		t.Errorf("Inherits(%s, %s) should fail", r1.String(), r2.String())
-	}
-	if err.Error() != expectedErr {
-		t.Errorf("Inherits(%s, %s) should result in error %s, got %s instead",
-			r1.String(), r2.String(), expectedErr, err.Error())
+		if err == nil {
+			t.Errorf("Inherits(%s, %s) should fail", r1.String(), r2.String())
+		}
+
+		if err.Error() != test.expectedErr {
+			t.Errorf("Inherits(%s, %s) should result in error %s, got %s instead",
+				r1.String(), r2.String(), test.expectedErr, err.Error())
+			t.Logf("schemes %v, %v",
+				r1.GetPointer().String(),
+				r2.GetPointer().String())
+		}
 	}
 }
 
