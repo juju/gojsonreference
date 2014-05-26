@@ -27,9 +27,10 @@ package gojsonreference
 
 import (
 	"errors"
-	"github.com/sigu-399/gojsonpointer"
 	"net/url"
 	"strings"
+
+	"github.com/sigu-399/gojsonpointer"
 )
 
 const (
@@ -89,14 +90,14 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 	if strings.HasPrefix(jsonReferenceString, const_fragment_char) {
 		r.referencePointer, err = gojsonpointer.NewJsonPointer(jsonReferenceString[1:])
 		if err != nil {
-			return nil
+			return err
 		}
 		r.HasFragmentOnly = true
 	} else {
 
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		if r.referenceUrl.Scheme != "" && r.referenceUrl.Host != "" {
@@ -110,7 +111,7 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 
 		r.referencePointer, err = gojsonpointer.NewJsonPointer(r.referenceUrl.Fragment)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 
@@ -185,6 +186,4 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
 	}
 	return &inheritedReference, nil
-
-	return nil, nil
 }

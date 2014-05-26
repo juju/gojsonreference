@@ -15,12 +15,12 @@
 // author  			sigu-399
 // author-github 	https://github.com/sigu-399
 // author-mail		sigu.399@gmail.com
-// 
+//
 // repository-name	gojsonreference
 // repository-desc	An implementation of JSON Reference - Go language
-// 
+//
 // description		Automated tests on package.
-// 
+//
 // created      	03-03-2013
 
 package gojsonreference
@@ -152,44 +152,100 @@ func TestUrlPathOnly(t *testing.T) {
 func TestInheritsValid(t *testing.T) {
 
 	in1 := "http://www.test.com/doc.json"
-	in2 := "#/a/b"
-	out := in1 + in2
+	in2 := "http://www.test.com/doc.json#/a/b"
+	out := in2
 
-	r1, _ := NewJsonReference(in1)
-	r2, _ := NewJsonReference(in2)
+	r1, err := NewJsonReference(in1)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
+	}
+
+	r2, err := NewJsonReference(in2)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r2.String(), err.Error())
+	}
 
 	result, err := r1.Inherits(r2)
 	if err != nil {
-		t.Errorf("Inherits(%s,%s) error %s", r1.String(), r2.String(), err.Error())
+		t.Errorf("Inherits(%s, %s) error %s", r1.String(), r2.String(), err.Error())
 	}
 
 	if result.String() != out {
-		t.Errorf("Inherits(%s,%s) = %s, expect %s", r1.String(), r2.String(), result.String(), out)
+		t.Errorf("Inherits(%s, %s) = %s, expect %s", r1.String(), r2.String(), result.String(), out)
+	}
+}
+
+func TestInheritsFragmentValid(t *testing.T) {
+
+	in1 := "http://www.test.com/doc.json"
+	in2 := "#/a/b"
+	out := in1 + in2
+
+	r1, err := NewJsonReference(in1)
+	r2, err := NewJsonReference(in2)
+
+	result, err := r1.Inherits(r2)
+	if err != nil {
+		t.Errorf("Inherits(%s, %s) error %s", r1.String(), r2.String(), err.Error())
+	}
+
+	if result.String() != out {
+		t.Errorf("Inherits(%s, %s) = %s, expect %s", r1.String(), r2.String(), result.String(), out)
 	}
 }
 
 func TestInheritsInvalid(t *testing.T) {
 
-	in1 := "http://www.test.com/doc.json"
-	in2 := "http://www.test2.com/doc.json#bla"
+	var tests = []struct { 
+		path1 string,
+		path2 string,
+		expectedErr string,
+	}{{
+		"http://www.test.com/doc.json",
+		"http://www.test2.com/doc.json#/bla",
+		"References have different hosts",
+	}, {
+		"file:///foo/bar.doc",
+		"http://www.foo.com/bar.doc",
+		"References have different schemes",
+	}}
 
-	r1, _ := NewJsonReference(in1)
-	r2, _ := NewJsonReference(in2)
-
-	_, err := r1.Inherits(r2)
-	if err == nil {
-		t.Errorf("Inherits(%s,%s) should fail", r1.String(), r2.String())
+	r1, err := NewJsonReference(in1)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
 	}
 
+	r2, err := NewJsonReference(in2)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r2.String(), err.Error())
+	}
+
+	_, err = r1.Inherits(r2)
+
+	if err == nil {
+		t.Errorf("Inherits(%s, %s) should fail", r1.String(), r2.String())
+	}
+	if err.Error() != expectedErr {
+		t.Errorf("Inherits(%s, %s) should result in error %s, got %s instead",
+			r1.String(), r2.String(), expectedErr, err.Error())
+	}
 }
 
 func TestFileScheme(t *testing.T) {
 
-	in1 := "file:///Users/mac/1.json#a"
-	in2 := "file:///Users/mac/2.json#b"
+	in1 := "file:///Users/mac/doc.json"
+	in2 := "file:///Users/mac/doc.json#/b"
+	out := in2
 
-	r1, _ := NewJsonReference(in1)
-	r2, _ := NewJsonReference(in2)
+	r1, err := NewJsonReference(in1)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
+	}
+
+	r2, err := NewJsonReference(in2)
+	if err != nil {
+		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
+	}
 
 	if r1.HasFragmentOnly != false {
 		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in1, r1.HasFragmentOnly, false)
@@ -207,9 +263,12 @@ func TestFileScheme(t *testing.T) {
 		t.Errorf("NewJsonReference(%v)::IsCanonical %v expect %v", in1, r1.IsCanonical, true)
 	}
 
-	_, err := r1.Inherits(r2)
+	result, err := r1.Inherits(r2)
 	if err != nil {
-		t.Errorf("Inherits(%s,%s) error %s", r1.String(), r2.String(), err.Error())
+		t.Errorf("Inherits(%s, %s) error %s", r1.String(), r2.String(), err.Error())
 	}
 
+	if result.String() != out {
+		t.Errorf("Inherits(%s, %s) = %s, expect %s", r1.String(), r2.String(), result.String(), out)
+	}
 }
