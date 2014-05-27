@@ -41,7 +41,6 @@ func NewJsonReference(jsonReferenceString string) (JsonReference, error) {
 	var r JsonReference
 	err := r.parse(jsonReferenceString)
 	return r, err
-
 }
 
 type JsonReference struct {
@@ -110,58 +109,30 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 // If the child cannot inherit from the parent, an error is returned
 func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 
+	if r.referenceUrl == nil {
+		return nil, errors.New("parent reference nil")
+	}
+
 	if !child.HasFragmentOnly {
-		if child.GetUrl().Scheme != r.GetUrl().Scheme {
-			return nil, errors.New("Scheme of child " + child.String() +
+		if child.referenceUrl.Scheme != r.referenceUrl.Scheme {
+			return nil, errors.New("scheme of child " + child.String() +
 				"incompatible with scheme of parent " + r.String())
 		}
 	}
 
-	switch r.GetUrl().Scheme {
-	case "http":
-		return r.inheritsImplHttp(child)
-	case "file":
-		return r.inheritsImplFile(child)
-	}
-
-	return nil, errors.New("Scheme type " + r.GetUrl().Scheme + " not handled.")
-}
-
-func (r *JsonReference) inheritsImplFile(child JsonReference) (*JsonReference, error) {
-
-	if !r.GetUrl().IsAbs() {
-		return nil, errors.New("Parent reference must be absolute URL.")
-	}
-
-	childReference := child.String()
-
-	if child.HasFragmentOnly {
-		childReference = r.GetUrl().Scheme + "://" + r.GetUrl().Path + child.String()
-	}
-
-	inheritedReference, err := NewJsonReference(childReference)
-	if err != nil {
-		return nil, err
-	}
-
-	return &inheritedReference, nil
-}
-
-func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, error) {
-
 	if !r.referenceUrl.IsAbs() {
-		return nil, errors.New("Parent reference must be absolute URL.")
+		return nil, errors.New("parent reference must be absolute URL.")
 	}
 
-	if r.referenceUrl.IsAbs() && child.referenceUrl.IsAbs() {
-		println("Got inside child = " + child.String())
-		if r.referenceUrl.Scheme != child.referenceUrl.Scheme {
-			return nil, errors.New("References have different schemes")
-		}
-		if r.referenceUrl.Host != child.referenceUrl.Host {
-			return nil, errors.New("References have different hosts")
-		}
+	if r.referenceUrl.Scheme != "http" && r.referenceUrl.Scheme != "file" {
+		return nil, errors.New("scheme type " + r.referenceUrl.Scheme + " not handled")
 	}
+
+	if r.referenceUrl.Host != child.referenceUrl.Host {
+		return nil, errors.New("references have different hosts")
+	}
+
+	///////
 
 	inheritedReference, err := NewJsonReference(r.String())
 	if err != nil {
@@ -172,11 +143,29 @@ func (r *JsonReference) inheritsImplHttp(child JsonReference) (*JsonReference, e
 		inheritedReference.referenceUrl.Fragment = child.referencePointer.String()
 		inheritedReference.referencePointer = child.referencePointer
 	}
+
+	// file
+	childReferenceString := child.String()
+
+	// file
+	if child.HasFragmentOnly {
+		childReferenceString = r.referenceUrl.Scheme + "://" + r.referenceUrl.Path + child.String()
+	}
+
+	// file
+	inheritedReference, err := NewJsonReference(childReferenceString)
+	if err != nil {
+		return nil, err
+	}
+
+	// http
 	if !child.referenceUrl.IsAbs() {
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
 	} else {
 		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
+		// inheritedReference.referenceUrl.Host
 	}
+
 	return &inheritedReference, nil
 }
