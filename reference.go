@@ -82,12 +82,7 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 			return err
 		}
 
-		r.referenceUrl, err = url.Parse(jsonReferenceString)
-
-		if err != nil {
-			return err
-		}
-
+		r.referenceUrl = &url.URL{Fragment: jsonReferenceString[1:]}
 		r.hasFragmentOnly = true
 	} else {
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
@@ -137,6 +132,7 @@ func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 	}
 
 	// Child reference is not a fragment, and has a different path than parent
+	//if child.referenceUrl != nil && child.referenceUrl.Path != "" {
 	if child.referenceUrl.Path != "" {
 		if !strings.HasPrefix(child.referenceUrl.Path, r.referenceUrl.Path) {
 			return nil, errors.New("child reference " + child.String() +
@@ -148,12 +144,12 @@ func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
 	}
 
-	if child.referencePointer.String() != "" {
-		if !strings.HasPrefix(child.referencePointer.String(), r.referencePointer.String()) {
+	if child.referenceUrl != nil && child.referenceUrl.Fragment != "" {
+		if !strings.HasPrefix(child.referenceUrl.Fragment, r.referenceUrl.Fragment) {
 			return nil, errors.New("child reference " + child.String() +
-				" has divergent pointer " + child.referencePointer.String() +
+				" has divergent pointer " + child.referenceUrl.Fragment +
 				" from parent " + r.String() +
-				", which has pointer " + r.referencePointer.String())
+				", which has pointer " + r.referenceUrl.Fragment)
 		}
 
 		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
