@@ -42,10 +42,6 @@ func TestFull(t *testing.T) {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
 
-	if r1.hasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
-	}
-
 	if r1.GetUrl().Fragment != "/f/a/b" {
 		t.Errorf("NewJsonReference(%v) fragment is %v, expect %v", in, r1.GetUrl().Fragment, "/f/a/b")
 	}
@@ -63,10 +59,6 @@ func TestFullUrl(t *testing.T) {
 	if in != r1.String() {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
-
-	if r1.hasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
-	}
 }
 
 func TestFragmentOnly(t *testing.T) {
@@ -81,10 +73,6 @@ func TestFragmentOnly(t *testing.T) {
 	if in != r1.String() {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
-
-	if r1.hasFragmentOnly != true {
-		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, true)
-	}
 }
 
 func TestUrlPathOnly(t *testing.T) {
@@ -98,10 +86,6 @@ func TestUrlPathOnly(t *testing.T) {
 
 	if in != r1.String() {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
-	}
-
-	if r1.hasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
 	}
 }
 
@@ -216,10 +200,6 @@ func TestFileScheme(t *testing.T) {
 	r2, err := NewJsonReference(in2)
 	if err != nil {
 		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
-	}
-
-	if r1.hasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in1, r1.hasFragmentOnly, false)
 	}
 
 	result, err := r1.Inherits(r2)

@@ -39,15 +39,25 @@ const (
 
 func NewJsonReference(jsonReferenceString string) (JsonReference, error) {
 	var r JsonReference
-	err := r.parse(jsonReferenceString)
+
+	var err error
+
+	r.referenceUrl, err = url.Parse(jsonReferenceString)
+	if err != nil {
+		return JsonReference{}, err
+	}
+
+	r.referencePointer, err = gojsonpointer.NewJsonPointer(r.referenceUrl.Fragment)
+	if err != nil {
+		return JsonReference{}, err
+	}
+
 	return r, err
 }
 
 type JsonReference struct {
 	referenceUrl     *url.URL
 	referencePointer gojsonpointer.JsonPointer
-
-	hasFragmentOnly bool
 }
 
 func (r *JsonReference) GetUrl() *url.URL {
@@ -60,43 +70,11 @@ func (r *JsonReference) GetPointer() *gojsonpointer.JsonPointer {
 
 func (r *JsonReference) String() string {
 
-	if r.hasFragmentOnly {
-		return const_fragment_char + r.referencePointer.String()
-	}
-
 	if r.referenceUrl != nil {
 		return r.referenceUrl.String()
 	}
 
 	return r.referencePointer.String()
-}
-
-// "Constructor", parses the given string JSON reference
-func (r *JsonReference) parse(jsonReferenceString string) error {
-
-	var err error
-	// fragment only
-	if strings.HasPrefix(jsonReferenceString, const_fragment_char) {
-		r.referencePointer, err = gojsonpointer.NewJsonPointer(jsonReferenceString[1:])
-		if err != nil {
-			return err
-		}
-
-		r.referenceUrl = &url.URL{Fragment: jsonReferenceString[1:]}
-		r.hasFragmentOnly = true
-	} else {
-		r.referenceUrl, err = url.Parse(jsonReferenceString)
-		if err != nil {
-			return err
-		}
-
-		r.referencePointer, err = gojsonpointer.NewJsonPointer(r.referenceUrl.Fragment)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // Creates a new reference from a parent and a child
