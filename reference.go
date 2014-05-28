@@ -68,7 +68,6 @@ func (r *JsonReference) String() string {
 		return r.referenceUrl.String()
 	}
 
-	println("Never get here!")
 	return r.referencePointer.String()
 }
 
@@ -84,6 +83,7 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 		}
 
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
+
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 				", which has pointer " + r.referencePointer.String())
 		}
 
-		inheritedReference.referenceUrl.Fragment = child.referencePointer.String()
+		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
 		inheritedReference.referencePointer = child.referencePointer
 	}
 
