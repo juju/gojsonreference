@@ -42,8 +42,12 @@ func TestFull(t *testing.T) {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
 
-	if r1.HasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
+	if r1.hasFragmentOnly != false {
+		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
+	}
+
+	if r1.GetUrl().Fragment != "/f/a/b" {
+		t.Errorf("NewJsonReference(%v) fragment is %v, expect %v", in, r1.GetUrl().Fragment, "/f/a/b")
 	}
 }
 
@@ -60,8 +64,8 @@ func TestFullUrl(t *testing.T) {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
 
-	if r1.HasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
+	if r1.hasFragmentOnly != false {
+		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
 	}
 }
 
@@ -78,8 +82,8 @@ func TestFragmentOnly(t *testing.T) {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
 
-	if r1.HasFragmentOnly != true {
-		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, true)
+	if r1.hasFragmentOnly != true {
+		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, true)
 	}
 }
 
@@ -96,8 +100,8 @@ func TestUrlPathOnly(t *testing.T) {
 		t.Errorf("NewJsonReference(%v) = %v, expect %v", in, r1.String(), in)
 	}
 
-	if r1.HasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in, r1.HasFragmentOnly, false)
+	if r1.hasFragmentOnly != false {
+		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in, r1.hasFragmentOnly, false)
 	}
 }
 
@@ -156,17 +160,17 @@ func TestInheritsInvalid(t *testing.T) {
 	}{{
 		"http://www.test.com/doc.json",
 		"http://www.test2.com/doc.json#/bla",
-		"References have different hosts",
+		"references have different hosts",
 		"Check that different hosts are caught.",
 	}, {
 		"file:///foo/bar.doc",
 		"http://www.foo.com/bar.doc",
-		"References are not compatible",
+		"scheme of child http://www.foo.com/bar.doc incompatible with scheme of parent file:///foo/bar.doc",
 		"Check that incompatible references are caught.",
 	}, {
 		"http://www.foo.com",
 		"mailto:scheme@foo.com",
-		"References have different schemes",
+		"scheme of child mailto:scheme@foo.com incompatible with scheme of parent http://www.foo.com",
 		"Check that different schemes are caught.",
 	}}
 
@@ -214,8 +218,8 @@ func TestFileScheme(t *testing.T) {
 		t.Errorf("NewJsonReference(%s) error %s", r1.String(), err.Error())
 	}
 
-	if r1.HasFragmentOnly != false {
-		t.Errorf("NewJsonReference(%v)::HasFragmentOnly %v expect %v", in1, r1.HasFragmentOnly, false)
+	if r1.hasFragmentOnly != false {
+		t.Errorf("NewJsonReference(%v)::hasFragmentOnly %v expect %v", in1, r1.hasFragmentOnly, false)
 	}
 
 	result, err := r1.Inherits(r2)

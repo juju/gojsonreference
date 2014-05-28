@@ -47,7 +47,7 @@ type JsonReference struct {
 	referenceUrl     *url.URL
 	referencePointer gojsonpointer.JsonPointer
 
-	HasFragmentOnly bool
+	hasFragmentOnly bool
 }
 
 func (r *JsonReference) GetUrl() *url.URL {
@@ -60,7 +60,7 @@ func (r *JsonReference) GetPointer() *gojsonpointer.JsonPointer {
 
 func (r *JsonReference) String() string {
 
-	if r.HasFragmentOnly {
+	if r.hasFragmentOnly {
 		return const_fragment_char + r.referencePointer.String()
 	}
 
@@ -76,7 +76,6 @@ func (r *JsonReference) String() string {
 func (r *JsonReference) parse(jsonReferenceString string) error {
 
 	var err error
-
 	// fragment only
 	if strings.HasPrefix(jsonReferenceString, const_fragment_char) {
 		r.referencePointer, err = gojsonpointer.NewJsonPointer(jsonReferenceString[1:])
@@ -89,7 +88,7 @@ func (r *JsonReference) parse(jsonReferenceString string) error {
 			return err
 		}
 
-		r.HasFragmentOnly = true
+		r.hasFragmentOnly = true
 	} else {
 		r.referenceUrl, err = url.Parse(jsonReferenceString)
 		if err != nil {
@@ -113,13 +112,6 @@ func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 		return nil, errors.New("parent reference nil")
 	}
 
-	if !child.HasFragmentOnly {
-		if child.referenceUrl.Scheme != r.referenceUrl.Scheme {
-			return nil, errors.New("scheme of child " + child.String() +
-				"incompatible with scheme of parent " + r.String())
-		}
-	}
-
 	if !r.referenceUrl.IsAbs() {
 		return nil, errors.New("parent reference must be absolute URL.")
 	}
@@ -128,43 +120,44 @@ func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
 		return nil, errors.New("scheme type " + r.referenceUrl.Scheme + " not handled")
 	}
 
-	if r.referenceUrl.Host != child.referenceUrl.Host {
-		return nil, errors.New("references have different hosts")
-	}
+	if child.referenceUrl.IsAbs() {
+		if child.referenceUrl.Scheme != r.referenceUrl.Scheme {
+			return nil, errors.New("scheme of child " + child.String() +
+				" incompatible with scheme of parent " + r.String())
+		}
 
-	///////
+		if r.referenceUrl.Host != child.referenceUrl.Host {
+			return nil, errors.New("references have different hosts")
+		}
+	}
 
 	inheritedReference, err := NewJsonReference(r.String())
 	if err != nil {
 		return nil, err
 	}
 
-	if child.HasFragmentOnly {
+	// Child reference is not a fragment, and has a different path than parent
+	if child.referenceUrl.Path != "" {
+		if !strings.HasPrefix(child.referenceUrl.Path, r.referenceUrl.Path) {
+			return nil, errors.New("child reference " + child.String() +
+				" has divergent path " + child.referenceUrl.Path +
+				" from parent " + r.String() +
+				", which has path " + r.referenceUrl.Path)
+		}
+
+		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
+	}
+
+	if child.referencePointer.String() != "" {
+		if !strings.HasPrefix(child.referencePointer.String(), r.referencePointer.String()) {
+			return nil, errors.New("child reference " + child.String() +
+				" has divergent pointer " + child.referencePointer.String() +
+				" from parent " + r.String() +
+				", which has pointer " + r.referencePointer.String())
+		}
+
 		inheritedReference.referenceUrl.Fragment = child.referencePointer.String()
 		inheritedReference.referencePointer = child.referencePointer
-	}
-
-	// file
-	childReferenceString := child.String()
-
-	// file
-	if child.HasFragmentOnly {
-		childReferenceString = r.referenceUrl.Scheme + "://" + r.referenceUrl.Path + child.String()
-	}
-
-	// file
-	inheritedReference, err := NewJsonReference(childReferenceString)
-	if err != nil {
-		return nil, err
-	}
-
-	// http
-	if !child.referenceUrl.IsAbs() {
-		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
-	} else {
-		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
-		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
-		// inheritedReference.referenceUrl.Host
 	}
 
 	return &inheritedReference, nil
