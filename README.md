@@ -5,7 +5,10 @@ An implementation of JSON Reference - Go language
 Work in progress ( 90% done )
 
 ## Dependencies
-https://github.com/sigu-399/gojsonpointer
+
+```
+go get -u https://github.com/binary132/gojsonpointer
+```
 
 ## References
 http://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-07
