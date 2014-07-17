@@ -30,7 +30,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/binary132/gojsonpointer"
+	"github.com/juju/gojsonpointer"
 )
 
 const (
