@@ -2,7 +2,7 @@
 An implementation of JSON Reference - Go language
 
 ## Dependencies
-https://github.com/xeipuuv/gojsonpointer
+https://github.com/juju/gojsonpointer
 
 ## References
 http://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-07
