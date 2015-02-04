@@ -1,14 +1,8 @@
 # gojsonreference
 An implementation of JSON Reference - Go language
 
-## Status
-Work in progress ( 90% done )
-
 ## Dependencies
-
-```
-go get -u https://github.com/binary132/gojsonpointer
-```
+https://github.com/juju/gojsonpointer
 
 ## References
 http://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-07

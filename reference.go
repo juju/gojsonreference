@@ -1,4 +1,4 @@
-// Copyright 2013 sigu-399 ( https://github.com/sigu-399 )
+// Copyright 2015 xeipuuv ( https://github.com/xeipuuv )
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// author  			sigu-399
-// author-github 	https://github.com/sigu-399
-// author-mail		sigu.399@gmail.com
+// author  			xeipuuv
+// author-github 	https://github.com/xeipuuv
+// author-mail		xeipuuv@gmail.com
 //
 // repository-name	gojsonreference
 // repository-desc	An implementation of JSON Reference - Go language
@@ -27,10 +27,9 @@ package gojsonreference
 
 import (
 	"errors"
+	"github.com/juju/gojsonpointer"
 	"net/url"
 	"strings"
-
-	"github.com/juju/gojsonpointer"
 )
 
 const (
@@ -38,26 +37,22 @@ const (
 )
 
 func NewJsonReference(jsonReferenceString string) (JsonReference, error) {
+
 	var r JsonReference
-
-	var err error
-
-	r.referenceUrl, err = url.Parse(jsonReferenceString)
-	if err != nil {
-		return JsonReference{}, err
-	}
-
-	r.referencePointer, err = gojsonpointer.NewJsonPointer(r.referenceUrl.Fragment)
-	if err != nil {
-		return JsonReference{}, err
-	}
-
+	err := r.parse(jsonReferenceString)
 	return r, err
+
 }
 
 type JsonReference struct {
 	referenceUrl     *url.URL
 	referencePointer gojsonpointer.JsonPointer
+
+	HasFullUrl      bool
+	HasUrlPathOnly  bool
+	HasFragmentOnly bool
+	HasFileScheme   bool
+	HasFullFilePath bool
 }
 
 func (r *JsonReference) GetUrl() *url.URL {
@@ -74,65 +69,60 @@ func (r *JsonReference) String() string {
 		return r.referenceUrl.String()
 	}
 
+	if r.HasFragmentOnly {
+		return const_fragment_char + r.referencePointer.String()
+	}
+
 	return r.referencePointer.String()
+}
+
+func (r *JsonReference) IsCanonical() bool {
+	return (r.HasFileScheme && r.HasFullFilePath) || (!r.HasFileScheme && r.HasFullUrl)
+}
+
+// "Constructor", parses the given string JSON reference
+func (r *JsonReference) parse(jsonReferenceString string) (err error) {
+
+	r.referenceUrl, err = url.Parse(jsonReferenceString)
+	if err != nil {
+		return
+	}
+	refUrl := r.referenceUrl
+
+	if refUrl.Scheme != "" && refUrl.Host != "" {
+		r.HasFullUrl = true
+	} else {
+		if refUrl.Path != "" {
+			r.HasUrlPathOnly = true
+		} else if refUrl.RawQuery == "" && refUrl.Fragment != "" {
+			r.HasFragmentOnly = true
+		}
+	}
+
+	r.HasFileScheme = refUrl.Scheme == "file"
+	r.HasFullFilePath = strings.HasPrefix(refUrl.Path, "/")
+
+	// invalid json-pointer error means url has no json-pointer fragment. simply ignore error
+	r.referencePointer, _ = gojsonpointer.NewJsonPointer(refUrl.Fragment)
+
+	return
 }
 
 // Creates a new reference from a parent and a child
 // If the child cannot inherit from the parent, an error is returned
 func (r *JsonReference) Inherits(child JsonReference) (*JsonReference, error) {
-
-	if r.referenceUrl == nil {
-		return nil, errors.New("parent reference nil")
+	childUrl := child.GetUrl()
+	parentUrl := r.GetUrl()
+	if childUrl == nil {
+		return nil, errors.New("childUrl is nil!")
+	}
+	if parentUrl == nil {
+		return nil, errors.New("parentUrl is nil!")
 	}
 
-	if !r.referenceUrl.IsAbs() {
-		return nil, errors.New("parent reference must be absolute URL.")
-	}
-
-	if r.referenceUrl.Scheme != "http" && r.referenceUrl.Scheme != "file" {
-		return nil, errors.New("scheme type " + r.referenceUrl.Scheme + " not handled")
-	}
-
-	if child.referenceUrl.IsAbs() {
-		if child.referenceUrl.Scheme != r.referenceUrl.Scheme {
-			return nil, errors.New("scheme of child " + child.String() +
-				" incompatible with scheme of parent " + r.String())
-		}
-
-		if r.referenceUrl.Host != child.referenceUrl.Host {
-			return nil, errors.New("references have different hosts")
-		}
-	}
-
-	inheritedReference, err := NewJsonReference(r.String())
+	ref, err := NewJsonReference(parentUrl.ResolveReference(childUrl).String())
 	if err != nil {
 		return nil, err
 	}
-
-	// Child reference is not a fragment, and has a different path than parent
-	//if child.referenceUrl != nil && child.referenceUrl.Path != "" {
-	if child.referenceUrl.Path != "" {
-		if !strings.HasPrefix(child.referenceUrl.Path, r.referenceUrl.Path) {
-			return nil, errors.New("child reference " + child.String() +
-				" has divergent path " + child.referenceUrl.Path +
-				" from parent " + r.String() +
-				", which has path " + r.referenceUrl.Path)
-		}
-
-		inheritedReference.referenceUrl.Path = child.referenceUrl.Path
-	}
-
-	if child.referenceUrl != nil && child.referenceUrl.Fragment != "" {
-		if !strings.HasPrefix(child.referenceUrl.Fragment, r.referenceUrl.Fragment) {
-			return nil, errors.New("child reference " + child.String() +
-				" has divergent pointer " + child.referenceUrl.Fragment +
-				" from parent " + r.String() +
-				", which has pointer " + r.referenceUrl.Fragment)
-		}
-
-		inheritedReference.referenceUrl.Fragment = child.referenceUrl.Fragment
-		inheritedReference.referencePointer = child.referencePointer
-	}
-
-	return &inheritedReference, nil
+	return &ref, err
 }
